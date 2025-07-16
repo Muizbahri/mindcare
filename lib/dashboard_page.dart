@@ -3,6 +3,7 @@ import 'self_assessment_flow.dart';
 import 'music_player_page.dart';
 import 'mental_health_articles_page.dart';
 import 'emergency_support_page.dart';
+import 'nearest_hospital_page.dart';
 
 class DashboardPage extends StatelessWidget {
   final String userName;
@@ -217,6 +218,14 @@ class DashboardPage extends StatelessWidget {
                       iconColor: Color(0xFFF87171),
                       title: 'Nearest Hospital',
                       subtitle: 'Find mental health support nearby',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  const NearestHospitalPage()),
+                        );
+                      },
                     ),
                     _FeatureCard(
                       icon: Icons.psychology_outlined,
