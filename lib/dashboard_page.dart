@@ -4,6 +4,7 @@ import 'music_player_page.dart';
 import 'mental_health_articles_page.dart';
 import 'emergency_support_page.dart';
 import 'nearest_hospital_page.dart';
+import 'book_appointment_page.dart';
 
 class DashboardPage extends StatelessWidget {
   final String userName;
@@ -222,16 +223,23 @@ class DashboardPage extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>
-                                  const NearestHospitalPage()),
+                              builder: (context) => NearestHospitalPage()),
                         );
                       },
                     ),
                     _FeatureCard(
-                      icon: Icons.psychology_outlined,
+                      icon: Icons.calendar_today,
                       iconColor: Color(0xFFA78BFA),
-                      title: 'Self Assessment',
-                      subtitle: 'PHQ-9 & GAD-7 screening',
+                      title: 'Book Appointment',
+                      subtitle: 'Schedule a session with a counselor',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BookAppointmentPage(),
+                          ),
+                        );
+                      },
                     ),
                     _FeatureCard(
                       icon: Icons.menu_book_outlined,
