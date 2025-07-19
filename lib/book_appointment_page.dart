@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 
@@ -11,11 +10,16 @@ class BookAppointmentPage extends StatefulWidget {
 }
 
 class _BookAppointmentPageState extends State<BookAppointmentPage> {
-  List<Map<String, dynamic>> counselors = [];
+  // Senarai counselor statik
+  final List<Map<String, dynamic>> counselors = [
+    {'id': 1, 'full_name': 'Dr. Taylor Alison Swift'},
+    {'id': 2, 'full_name': 'Dr. Daniel Hakim'},
+    {'id': 3, 'full_name': 'Dr. Nurul Aina'},
+    {'id': 4, 'full_name': 'Dr. Ahmad Zaki'},
+  ];
   String? selectedCounselorId;
   DateTime? selectedDate;
   String? selectedTime;
-  bool isLoading = true;
   final List<String> timeSlots = [
     '09:00 AM',
     '10:00 AM',
@@ -30,27 +34,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   @override
   void initState() {
     super.initState();
-    fetchCounselors();
-  }
-
-  Future<List<Map<String, dynamic>>> fetchCounselors() async {
-    final url = 'http://10.0.2.2:5000/api/geo/counselors';
-    try {
-      final response =
-          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
-      print('Counselor API status: ${response.statusCode}');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        print('Counselor data: $data');
-        return data.cast<Map<String, dynamic>>();
-      } else {
-        print('Counselor API error: ${response.body}');
-        throw Exception('Failed to load counselors');
-      }
-    } catch (e) {
-      print('Error fetching counselors: $e');
-      return [];
-    }
   }
 
   void _pickDate() async {
@@ -69,18 +52,9 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   }
 
   void _confirmAppointment() {
-    // TODO: Implement backend call to save appointment
     if (selectedCounselorId != null &&
         selectedDate != null &&
         selectedTime != null) {
-      // Prepare data
-      final data = {
-        'counselor_id': selectedCounselorId,
-        'selected_date': DateFormat('yyyy-MM-dd').format(selectedDate!),
-        'selected_time': selectedTime,
-      };
-      print('Appointment data: $data');
-      // Show confirmation (for demo)
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Appointment confirmed!')),
       );
@@ -95,10 +69,7 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Book Appointment',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: const Text('Book Appointment'),
         elevation: 0.5,
       ),
       backgroundColor: const Color(0xFFF5FAFF),
@@ -127,43 +98,22 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: fetchCounselors(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        } else if (snapshot.hasError ||
-                            (snapshot.data?.isEmpty ?? true)) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child:
-                                Text('No counselors found or failed to load.'),
-                          );
-                        } else {
-                          final counselors = snapshot.data ?? [];
-                          return DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              hintText: 'Choose a counselor',
-                            ),
-                            value: selectedCounselorId,
-                            items: counselors
-                                .map((c) => DropdownMenuItem<String>(
-                                      value: c['id'].toString(),
-                                      child: Text(c['full_name'] ?? 'Unknown'),
-                                    ))
-                                .toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                selectedCounselorId = val;
-                              });
-                            },
-                          );
-                        }
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Choose a counselor',
+                      ),
+                      value: selectedCounselorId,
+                      items: counselors
+                          .map((c) => DropdownMenuItem<String>(
+                                value: c['id'].toString(),
+                                child: Text(c['full_name'] ?? 'Unknown'),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          selectedCounselorId = val;
+                        });
                       },
                     ),
                   ],
@@ -297,27 +247,6 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            // Previous Appointments (optional, placeholder)
-            Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Previous Appointments',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    SizedBox(height: 8),
-                    Text('No previous appointments found.',
-                        style: TextStyle(color: Colors.grey)),
-                  ],
                 ),
               ),
             ),

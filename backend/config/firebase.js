@@ -1,9 +1,11 @@
 const admin = require('firebase-admin');
-const serviceAccount = require('./firebaseAdminKey.json');
 
+// Initialize without service account during development
 if (!admin.apps.length) {
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    // Using dummy config for development
+    projectId: process.env.FIREBASE_PROJECT_ID || 'mindcare-dev',
+    databaseURL: process.env.FIREBASE_DATABASE_URL || 'https://mindcare-dev.firebaseio.com',
   });
 }
 

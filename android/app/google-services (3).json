@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "519694999261",
+    "project_id": "mindcare-7ec51",
+    "storage_bucket": "mindcare-7ec51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:519694999261:android:e1c3b0b83163e6604f8534",
+        "android_client_info": {
+          "package_name": "com.example.mindcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCOOm-ql5wo-Q-ksrBJwFClKmlH981f7lk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

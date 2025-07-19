@@ -462,34 +462,14 @@ class _SelfAssessmentFlowState extends State<SelfAssessmentFlow> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: onNext != null
                               ? (isLast && isGad
-                                  ? const LinearGradient(
-                                            colors: [
-                                              Color(0xFF3B82F6),
-                                              Color(0xFF10B981)
-                                            ],
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                          ).createShader(const Rect.fromLTWH(
-                                              0, 0, 200, 50)) !=
-                                          null
-                                      ? null
-                                      : const Color(0xFF3B82F6)
-                                  : const LinearGradient(
-                                            colors: [
-                                              Color(0xFF8B5CF6),
-                                              Color(0xFF3B82F6)
-                                            ],
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                          ).createShader(const Rect.fromLTWH(
-                                              0, 0, 200, 50)) !=
-                                          null
-                                      ? null
-                                      : const Color(0xFF8B5CF6))
-                              : const Color(0xFFD1D5DB),
+                                  ? const Color(0xFF3B82F6)
+                                  : const Color(0xFF8B5CF6))
+                              : const Color(
+                                  0xFFCBD5E1), // lighter gray for disabled
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
+                          elevation: 0,
                         ),
                         child: Text(
                           isLast
@@ -497,8 +477,10 @@ class _SelfAssessmentFlowState extends State<SelfAssessmentFlow> {
                                   ? 'Continue to Results'
                                   : 'Continue to GAD-7')
                               : 'Next',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: onNext != null
+                                ? Colors.white
+                                : Color(0xFF64748B),
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             fontFamily: 'Poppins',
@@ -610,18 +592,11 @@ class _SelfAssessmentFlowState extends State<SelfAssessmentFlow> {
                 child: ElevatedButton(
                   onPressed: restart,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const LinearGradient(
-                              colors: [Color(0xFF3B82F6), Color(0xFF10B981)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ).createShader(
-                                const Rect.fromLTWH(0, 0, 200, 50)) !=
-                            null
-                        ? null
-                        : const Color(0xFF3B82F6),
+                    backgroundColor: const Color(0xFF3B82F6),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                    elevation: 0,
                   ),
                   child: const Text(
                     'Take Assessment Again',

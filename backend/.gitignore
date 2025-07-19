@@ -1,0 +1,19 @@
+# dependencies
+/node_modules
+
+# environment variables
+.env
+
+# Google Cloud credentials
+google-cloud-credentials.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock

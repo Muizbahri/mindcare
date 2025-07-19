@@ -1,7 +1,87 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 
-class EmergencySupportPage extends StatelessWidget {
+class EmergencySupportPage extends StatefulWidget {
   const EmergencySupportPage({Key? key}) : super(key: key);
+
+  @override
+  State<EmergencySupportPage> createState() => _EmergencySupportPageState();
+}
+
+class _EmergencySupportPageState extends State<EmergencySupportPage> {
+  Position? _userPosition;
+  List<dynamic> _hospitals = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initHospitals();
+  }
+
+  Future<void> _initHospitals() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      _userPosition = await _getCurrentLocation();
+      final hospitals = await _fetchNearbyHospitals(
+          _userPosition!.latitude, _userPosition!.longitude);
+      setState(() {
+        _hospitals = hospitals;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  Future<Position> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      await Geolocator.openLocationSettings();
+      throw Exception('Location services are disabled.');
+    }
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permissions are denied');
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permissions are permanently denied.');
+    }
+    return await Geolocator.getCurrentPosition();
+  }
+
+  Future<List<dynamic>> _fetchNearbyHospitals(double lat, double lon) async {
+    final url =
+        'http://localhost:5000/api/geo/nearby-hospitals?lat=$lat&lon=$lon';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load hospitals');
+    }
+  }
+
+  void _openGoogleMapsDirection(double destLat, double destLon) async {
+    if (_userPosition == null) return;
+    final origin = '${_userPosition!.latitude},${_userPosition!.longitude}';
+    final destination = '$destLat,$destLon';
+    final url =
+        'https://www.google.com/maps/dir/?api=1&origin=$origin&destination=$destination&travelmode=driving';
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -223,48 +303,101 @@ class EmergencySupportPage extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      _FacilityCard(
-                        name: 'City Mental Health Crisis Center',
-                        type: 'Crisis Center',
-                        address: '123 Healthcare Ave, Downtown',
-                        hours: '24/7',
-                        distance: '0.8 miles',
-                        services: const [
-                          'Emergency counseling',
-                          'Crisis intervention',
-                          'Psychiatric assessment',
-                        ],
-                        onCall: () {},
-                        onDirections: () {},
-                      ),
-                      _FacilityCard(
-                        name: 'General Hospital Psychiatric Unit',
-                        type: 'Hospital',
-                        address: '456 Medical Blvd, Central District',
-                        hours: '24/7',
-                        distance: '1.2 miles',
-                        services: const [
-                          'Emergency psychiatric care',
-                          'Inpatient services',
-                          'Medical evaluation',
-                        ],
-                        onCall: () {},
-                        onDirections: () {},
-                      ),
-                      _FacilityCard(
-                        name: 'Community Mental Health Center',
-                        type: 'Clinic',
-                        address: '789 Community St, Riverside',
-                        hours: 'Mon-Fri 8AM-8PM, Weekends 9AM-5PM',
-                        distance: '2.1 miles',
-                        services: const [
-                          'Counseling',
-                          'Support groups',
-                          'Referral services',
-                        ],
-                        onCall: () {},
-                        onDirections: () {},
-                      ),
+                      if (_loading)
+                        const Center(child: CircularProgressIndicator()),
+                      if (_error != null) Center(child: Text(_error!)),
+                      if (!_loading && _error == null)
+                        ..._hospitals.map((h) => Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          h['name'] ?? 'Unnamed Hospital',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Poppins',
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ),
+                                      if (h['distance'] != null)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF3B82F6)
+                                                .withOpacity(0.08),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '${(h['distance'] / 1000).toStringAsFixed(2)} km',
+                                            style: const TextStyle(
+                                              color: Color(0xFF3B82F6),
+                                              fontSize: 12,
+                                              fontFamily: 'Poppins',
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  if (h['address'] != null)
+                                    Text(
+                                      h['address'],
+                                      style: const TextStyle(
+                                        color: Color(0xFF64748B),
+                                        fontSize: 13,
+                                        fontFamily: 'Poppins',
+                                      ),
+                                    ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _openGoogleMapsDirection(
+                                                  h['lat'], h['lon']),
+                                          icon: const Icon(Icons.directions,
+                                              color: Color(0xFF3B82F6),
+                                              size: 18),
+                                          label: const Text('Directions',
+                                              style: TextStyle(
+                                                  fontFamily: 'Poppins',
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF3B82F6))),
+                                          style: OutlinedButton.styleFrom(
+                                            side: const BorderSide(
+                                                color: Color(0xFF3B82F6)),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )),
                     ],
                   ),
                 ),
@@ -399,184 +532,6 @@ class _ContactCard extends StatelessWidget {
                 fontFamily: 'Poppins',
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FacilityCard extends StatelessWidget {
-  final String name;
-  final String type;
-  final String address;
-  final String hours;
-  final String distance;
-  final List<String> services;
-  final VoidCallback onCall;
-  final VoidCallback onDirections;
-  const _FacilityCard({
-    required this.name,
-    required this.type,
-    required this.address,
-    required this.hours,
-    required this.distance,
-    required this.services,
-    required this.onCall,
-    required this.onDirections,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF3B82F6).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  distance,
-                  style: const TextStyle(
-                    color: Color(0xFF3B82F6),
-                    fontSize: 12,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            type,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              fontSize: 13,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              const Icon(Icons.location_on, size: 16, color: Color(0xFF94A3B8)),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  address,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 13,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 16, color: Color(0xFF94A3B8)),
-              const SizedBox(width: 4),
-              Text(
-                hours,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 13,
-                  fontFamily: 'Poppins',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: services
-                .map((s) => Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        s,
-                        style: const TextStyle(
-                          color: Color(0xFF3B82F6),
-                          fontSize: 12,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: onCall,
-                  icon: const Icon(Icons.phone, color: Colors.white, size: 18),
-                  label: const Text('Call',
-                      style: TextStyle(
-                          fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: onDirections,
-                  icon: const Icon(Icons.directions,
-                      color: Color(0xFF3B82F6), size: 18),
-                  label: const Text('Directions',
-                      style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3B82F6))),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF3B82F6)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),

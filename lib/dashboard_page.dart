@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'translate_demo.dart';
+import 'translate_service.dart';
 import 'self_assessment_flow.dart';
 import 'music_player_page.dart';
 import 'mental_health_articles_page.dart';
@@ -6,15 +8,70 @@ import 'emergency_support_page.dart';
 import 'nearest_hospital_page.dart';
 import 'book_appointment_page.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   final String userName;
   final DateTime date;
   DashboardPage({Key? key, this.userName = 'Demo', DateTime? date})
       : date = date ?? DateTime(2025, 7, 16),
         super(key: key);
 
-  String get formattedDate {
-    // Example: Wednesday, July 16, 2025
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  // All texts to be translated
+  late String greeting;
+  late String howFeeling;
+  late String checkInDesc;
+  late String startAssessment;
+  late String nearestHospital;
+  late String nearestHospitalDesc;
+  late String bookAppointment;
+  late String bookAppointmentDesc;
+  late String articles;
+  late String articlesDesc;
+  late String music;
+  late String musicDesc;
+  late String emergency;
+  late String emergencyDesc;
+  late String getHelpNow;
+  late String privacy;
+  late String privacyDesc;
+  late String dateString;
+  bool isTranslating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _setDefaultTexts();
+  }
+
+  void _setDefaultTexts() {
+    greeting = 'Good Evening,';
+    howFeeling = 'How are you feeling today?';
+    checkInDesc =
+        'Take a moment to check in with yourself. Your mental health matters.';
+    startAssessment = 'Start Assessment';
+    nearestHospital = 'Nearest Hospital';
+    nearestHospitalDesc = 'Find nearby help.';
+    bookAppointment = 'Book Appointment';
+    bookAppointmentDesc = 'Schedule a session with a counselor';
+    articles = 'Mental Health Articles';
+    articlesDesc = 'Educational resources';
+    music = 'Calming Music';
+    musicDesc = 'Mood-supportive playlists';
+    emergency = 'Emergency Support';
+    emergencyDesc =
+        "If you're experiencing a mental health crisis, immediate help is available.";
+    getHelpNow = 'Get Help Now';
+    privacy =
+        'Your data is encrypted and private. We never share your personal information.';
+    privacyDesc = '';
+    dateString = _formattedDate(widget.date);
+  }
+
+  String _formattedDate(DateTime date) {
     final weekDay = [
       'Monday',
       'Tuesday',
@@ -41,6 +98,48 @@ class DashboardPage extends StatelessWidget {
     return '$weekDay, $month ${date.day}, ${date.year}';
   }
 
+  String currentLang = 'en';
+  Future<void> _toggleLanguage() async {
+    if (isTranslating) return;
+    if (currentLang == 'en') {
+      setState(() => isTranslating = true);
+      try {
+        greeting = await translateText('Good Evening,', 'ms');
+        howFeeling = await translateText('How are you feeling today?', 'ms');
+        checkInDesc = await translateText(
+            'Take a moment to check in with yourself. Your mental health matters.',
+            'ms');
+        startAssessment = await translateText('Start Assessment', 'ms');
+        nearestHospital = await translateText('Nearest Hospital', 'ms');
+        nearestHospitalDesc = await translateText('Find nearby help.', 'ms');
+        bookAppointment = await translateText('Book Appointment', 'ms');
+        bookAppointmentDesc =
+            await translateText('Schedule a session with a counselor', 'ms');
+        articles = await translateText('Mental Health Articles', 'ms');
+        articlesDesc = await translateText('Educational resources', 'ms');
+        music = await translateText('Calming Music', 'ms');
+        musicDesc = await translateText('Mood-supportive playlists', 'ms');
+        emergency = await translateText('Emergency Support', 'ms');
+        emergencyDesc = await translateText(
+            "If you're experiencing a mental health crisis, immediate help is available.",
+            'ms');
+        getHelpNow = await translateText('Get Help Now', 'ms');
+        privacy = await translateText(
+            'Your data is encrypted and private. We never share your personal information.',
+            'ms');
+        setState(() {
+          currentLang = 'ms';
+        });
+      } catch (e) {}
+      setState(() => isTranslating = false);
+    } else {
+      _setDefaultTexts();
+      setState(() {
+        currentLang = 'en';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,6 +150,27 @@ class DashboardPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 32),
+              // Translate Button
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: ElevatedButton.icon(
+                  onPressed: isTranslating ? null : _toggleLanguage,
+                  icon: const Icon(Icons.translate),
+                  label: Text(
+                    isTranslating
+                        ? (currentLang == 'en'
+                            ? 'Translating...'
+                            : 'Menterjemah...')
+                        : (currentLang == 'en'
+                            ? 'Translate to Malay'
+                            : 'Tukar ke English'),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B82F6),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
               // Header Card
               Container(
                 width: 400,
@@ -97,9 +217,9 @@ class DashboardPage extends StatelessWidget {
                                 color: Colors.white,
                               ),
                               children: [
-                                const TextSpan(text: 'Good Evening,\n'),
+                                TextSpan(text: greeting + '\n'),
                                 TextSpan(
-                                  text: userName,
+                                  text: widget.userName,
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w400,
                                       fontSize: 18),
@@ -109,7 +229,7 @@ class DashboardPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            formattedDate,
+                            dateString,
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
@@ -146,12 +266,12 @@ class DashboardPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.show_chart, color: Color(0xFF3B82F6)),
-                        SizedBox(width: 8),
+                      children: [
+                        const Icon(Icons.show_chart, color: Color(0xFF3B82F6)),
+                        const SizedBox(width: 8),
                         Text(
-                          'How are you feeling today?',
-                          style: TextStyle(
+                          howFeeling,
+                          style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
                             fontFamily: 'Poppins',
@@ -160,9 +280,9 @@ class DashboardPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Take a moment to check in with yourself. Your mental health matters.',
-                      style: TextStyle(
+                    Text(
+                      checkInDesc,
+                      style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 14,
                         fontFamily: 'Poppins',
@@ -188,9 +308,9 @@ class DashboardPage extends StatelessWidget {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          'Start Assessment',
-                          style: TextStyle(
+                        child: Text(
+                          startAssessment,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -199,6 +319,7 @@ class DashboardPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -217,8 +338,8 @@ class DashboardPage extends StatelessWidget {
                     _FeatureCard(
                       icon: Icons.location_on,
                       iconColor: Color(0xFFF87171),
-                      title: 'Nearest Hospital',
-                      subtitle: 'Find mental health support nearby',
+                      title: nearestHospital,
+                      subtitle: nearestHospitalDesc,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -230,8 +351,8 @@ class DashboardPage extends StatelessWidget {
                     _FeatureCard(
                       icon: Icons.calendar_today,
                       iconColor: Color(0xFFA78BFA),
-                      title: 'Book Appointment',
-                      subtitle: 'Schedule a session with a counselor',
+                      title: bookAppointment,
+                      subtitle: bookAppointmentDesc,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -244,8 +365,8 @@ class DashboardPage extends StatelessWidget {
                     _FeatureCard(
                       icon: Icons.menu_book_outlined,
                       iconColor: Color(0xFF38BDF8),
-                      title: 'Mental Health Articles',
-                      subtitle: 'Educational resources',
+                      title: articles,
+                      subtitle: articlesDesc,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -258,8 +379,8 @@ class DashboardPage extends StatelessWidget {
                     _FeatureCard(
                       icon: Icons.music_note,
                       iconColor: Color(0xFF34D399),
-                      title: 'Calming Music',
-                      subtitle: 'Mood-supportive playlists',
+                      title: music,
+                      subtitle: musicDesc,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -285,13 +406,13 @@ class DashboardPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      children: const [
-                        Icon(Icons.phone_in_talk_outlined,
+                      children: [
+                        const Icon(Icons.phone_in_talk_outlined,
                             color: Color(0xFFF87171)),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
-                          'Emergency Support',
-                          style: TextStyle(
+                          emergency,
+                          style: const TextStyle(
                             color: Color(0xFFF87171),
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -301,9 +422,9 @@ class DashboardPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      "If you're experiencing a mental health crisis, immediate help is available.",
-                      style: TextStyle(
+                    Text(
+                      emergencyDesc,
+                      style: const TextStyle(
                         color: Color(0xFFB91C1C),
                         fontSize: 14,
                         fontFamily: 'Poppins',
@@ -329,9 +450,9 @@ class DashboardPage extends StatelessWidget {
                           ),
                           elevation: 2,
                         ),
-                        child: const Text(
-                          'Get Help Now',
-                          style: TextStyle(
+                        child: Text(
+                          getHelpNow,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -355,14 +476,14 @@ class DashboardPage extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.shield_outlined,
+                  children: [
+                    const Icon(Icons.shield_outlined,
                         size: 18, color: Color(0xFF64748B)),
-                    SizedBox(width: 8),
+                    const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Your data is encrypted and private. We never share your personal information.',
-                        style: TextStyle(
+                        privacy,
+                        style: const TextStyle(
                           color: Color(0xFF64748B),
                           fontSize: 13,
                           fontFamily: 'Poppins',

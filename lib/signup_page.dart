@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key}) : super(key: key);
 
@@ -244,7 +249,110 @@ class _SignUpPageState extends State<SignUpPage> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      final name = _nameController.text.trim();
+                      final email = _emailController.text.trim();
+                      final phone = _phoneController.text.trim();
+                      final password = _passwordController.text;
+                      final confirmPassword = _confirmPasswordController.text;
+
+                      if (name.isEmpty ||
+                          email.isEmpty ||
+                          phone.isEmpty ||
+                          password.isEmpty ||
+                          confirmPassword.isEmpty) {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Error"),
+                            content: const Text("Please fill in all fields."),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("OK"))
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (password != confirmPassword) {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Error"),
+                            content: const Text("Passwords do not match."),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("OK"))
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      try {
+                        // Sign up with Firebase
+                        UserCredential userCredential = await FirebaseAuth
+                            .instance
+                            .createUserWithEmailAndPassword(
+                          email: email,
+                          password: password,
+                        );
+
+                        final firebaseUid = userCredential.user?.uid;
+
+                        // Save user to backend
+                        final response = await http.post(
+                          Uri.parse(
+                              '${dotenv.env['API_BASE_URL']}/api/users'), // Contoh: http://localhost:3000/api/users
+                          headers: {'Content-Type': 'application/json'},
+                          body: jsonEncode({
+                            'firebase_uid': firebaseUid,
+                            'email': email,
+                            'full_name': name,
+                            'phone': phone,
+                          }),
+                        );
+
+                        if (response.statusCode == 200) {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text("Success"),
+                              content:
+                                  const Text("Account created successfully!"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.pop(context); // back to login
+                                  },
+                                  child: const Text("OK"),
+                                )
+                              ],
+                            ),
+                          );
+                        } else {
+                          throw Exception("Failed to save user to database");
+                        }
+                      } catch (e) {
+                        print("Signup error: $e");
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Signup Failed"),
+                            content: Text(e.toString()),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("OK"))
+                            ],
+                          ),
+                        );
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       elevation: 4,
                       shape: RoundedRectangleBorder(

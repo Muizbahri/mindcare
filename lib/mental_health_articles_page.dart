@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MentalHealthArticlesPage extends StatefulWidget {
   const MentalHealthArticlesPage({Key? key}) : super(key: key);
 
   @override
-  State<MentalHealthArticlesPage> createState() =>
-      _MentalHealthArticlesPageState();
+  State<MentalHealthArticlesPage> createState() => _MentalHealthArticlesPageState();
 }
 
 class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
@@ -22,12 +22,12 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
   final List<Map<String, dynamic>> articles = [
     {
       'title': 'Understanding Depression: Signs and Symptoms',
-      'desc':
-          'Learn about the common signs of depression and when to seek help.',
+      'desc': 'Learn about the common signs of depression and when to seek help.',
       'category': 'Depression',
       'icon': Icons.psychology_alt_outlined,
       'color': Color(0xFF3B82F6),
       'readTime': '5 min read',
+      'url': 'https://www.psychiatry.org/patients-families/depression/what-is-depression',
     },
     {
       'title': 'Managing Anxiety in Daily Life',
@@ -36,6 +36,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
       'icon': Icons.favorite_border,
       'color': Color(0xFF10B981),
       'readTime': '7 min read',
+      'url': 'https://www.betterhealth.vic.gov.au/health/conditionsandtreatments/anxiety-treatment-options',
     },
     {
       'title': 'Building Resilience and Coping Skills',
@@ -44,6 +45,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
       'icon': Icons.spa_outlined,
       'color': Color(0xFF8B5CF6),
       'readTime': '6 min read',
+      'url': 'https://www.verywellmind.com/ways-to-become-more-resilient-2795063#:~:text=Being%20optimistic,negative%20comments%20in%20your%20head.',
     },
     {
       'title': 'The Importance of Sleep for Mental Health',
@@ -52,6 +54,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
       'icon': Icons.nightlight_round,
       'color': Color(0xFF6366F1),
       'readTime': '4 min read',
+      'url': 'https://www.mentalhealth.org.uk/explore-mental-health/publications/sleep-matters-impact-sleep-health-and-wellbeing',
     },
     {
       'title': 'Mindfulness and Meditation for Beginners',
@@ -60,17 +63,22 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
       'icon': Icons.self_improvement,
       'color': Color(0xFFF59E42),
       'readTime': '8 min read',
+      'url': 'https://www.mindful.org/meditation/mindfulness-getting-started/',
     },
   ];
+
+  Future<void> _openArticle(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final filtered = selectedCategory == 0
         ? articles
-        : articles
-            .where(
-                (a) => a['category'] == categories[selectedCategory]['label'])
-            .toList();
+        : articles.where((a) => a['category'] == categories[selectedCategory]['label']).toList();
     return Scaffold(
       backgroundColor: const Color(0xFFF5FAFF),
       body: SafeArea(
@@ -183,8 +191,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
                                 color: a['color'].withOpacity(0.13),
                                 shape: BoxShape.circle,
                               ),
-                              child:
-                                  Icon(a['icon'], color: a['color'], size: 20),
+                              child: Icon(a['icon'], color: a['color'], size: 20),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -212,8 +219,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: a['color'].withOpacity(0.13),
                                 borderRadius: BorderRadius.circular(8),
@@ -228,8 +234,7 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
                               ),
                             ),
                             const SizedBox(width: 10),
-                            const Icon(Icons.access_time,
-                                size: 15, color: Color(0xFF94A3B8)),
+                            const Icon(Icons.access_time, size: 15, color: Color(0xFF94A3B8)),
                             const SizedBox(width: 2),
                             Text(
                               a['readTime'],
@@ -241,9 +246,8 @@ class _MentalHealthArticlesPageState extends State<MentalHealthArticlesPage> {
                             ),
                             const Spacer(),
                             IconButton(
-                              icon: const Icon(Icons.arrow_forward_ios,
-                                  size: 18, color: Color(0xFF3B82F6)),
-                              onPressed: () {},
+                              icon: const Icon(Icons.arrow_forward_ios, size: 18, color: Color(0xFF3B82F6)),
+                              onPressed: () => _openArticle(a['url']),
                             ),
                           ],
                         ),

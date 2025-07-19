@@ -1,10 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const db = require('./models/db');
+const db = require('./config/db');
 const geoRoutes = require('./routes/geo');
 const secureRoutes = require('./routes/secure');
 const testFirebase = require('./routes/testFirebase');
+const emotionRoutes = require('./routes/emotions');
 
 const app = express();
 
@@ -29,5 +30,8 @@ app.use('/api/secure', secureRoutes);
 
 // Firebase test routes
 app.use('/api/test', testFirebase);
+
+// Emotion detection routes
+app.use('/api/emotions', emotionRoutes);
 
 module.exports = app; 

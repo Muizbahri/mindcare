@@ -1,0 +1,2 @@
+C:/Users/lenovo/mindcare/android/app/.cxx/Debug/31uu2e32/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/lenovo/mindcare/android/app/.cxx/Debug/31uu2e32/armeabi-v7a/CMakeFiles/rebuild_cache.dir
