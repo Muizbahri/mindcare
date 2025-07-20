@@ -1,24 +1,23 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // Pastikan path ni betul ikut config sebenar awak
 
-router.post('/', async (req, res) => {
-  const { firebase_uid, email, full_name, phone } = req.body;
-
-  if (!firebase_uid || !email || !full_name || !phone) {
-    return res.status(400).json({ message: 'Missing required fields' });
+// Signup route
+router.post('/signup', async (req, res) => {
+  // Contoh: ambil data dari body
+  const { full_name, email, phone, password } = req.body;
+  if (!full_name || !email || !phone || !password) {
+    return res.status(400).json({ error: 'All fields are required' });
   }
-
   try {
-    const [result] = await db.query(
-      'INSERT INTO users (firebase_uid, email, full_name, phone) VALUES (?, ?, ?, ?)',
-      [firebase_uid, email, full_name, phone]
+    const db = require('../config/db');
+    // Contoh insert ke table users (pastikan table dan field wujud)
+    await db.query(
+      'INSERT INTO users (full_name, email, phone, password, created_at) VALUES (?, ?, ?, ?, NOW())',
+      [full_name, email, phone, password]
     );
-
-    return res.status(200).json({ message: 'User saved successfully', id: result.insertId });
-  } catch (error) {
-    console.error('Database error:', error);
-    return res.status(500).json({ message: 'Database error', error });
+    res.sendStatus(200);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

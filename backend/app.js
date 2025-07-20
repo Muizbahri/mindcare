@@ -6,6 +6,8 @@ const geoRoutes = require('./routes/geo');
 const secureRoutes = require('./routes/secure');
 const testFirebase = require('./routes/testFirebase');
 const emotionRoutes = require('./routes/emotions');
+const userRoutes = require('./routes/users');
+const appointmentsRoutes = require('./routes/appointments');
 
 const app = express();
 
@@ -21,6 +23,12 @@ app.get('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// User routes
+app.use('/api/users', userRoutes);
+
+// Appointments routes
+app.use('/api/appointments', appointmentsRoutes);
 
 // Geoapify routes
 app.use('/api/geo', geoRoutes);

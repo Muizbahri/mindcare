@@ -305,14 +305,13 @@ class _SignUpPageState extends State<SignUpPage> {
 
                         // Save user to backend
                         final response = await http.post(
-                          Uri.parse(
-                              '${dotenv.env['API_BASE_URL']}/api/users'), // Contoh: http://localhost:3000/api/users
+                          Uri.parse('http://10.0.2.2:5000/api/users/signup'),
                           headers: {'Content-Type': 'application/json'},
                           body: jsonEncode({
-                            'firebase_uid': firebaseUid,
-                            'email': email,
                             'full_name': name,
+                            'email': email,
                             'phone': phone,
+                            'password': password,
                           }),
                         );
 

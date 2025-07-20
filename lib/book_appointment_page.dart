@@ -1,12 +1,57 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BookAppointmentPage extends StatefulWidget {
   const BookAppointmentPage({Key? key}) : super(key: key);
 
   @override
   State<BookAppointmentPage> createState() => _BookAppointmentPageState();
+}
+
+// Model Appointment tanpa userName dan userEmail
+class Appointment {
+  final String appointmentDate;
+  final String appointmentTime;
+  final String counselorName;
+
+  Appointment({
+    required this.appointmentDate,
+    required this.appointmentTime,
+    required this.counselorName,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'appointment_date': appointmentDate,
+        'appointment_time': appointmentTime,
+        'counselor_name': counselorName,
+      };
+}
+
+class AppointmentController {
+  static Future<bool> bookAppointment(Appointment appointment) async {
+    final url = Uri.parse('http://10.0.2.2:5000/api/appointments');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(appointment.toJson()),
+    );
+    return response.statusCode == 200;
+  }
+}
+
+String convertTo24Hour(String input) {
+  // Clean hidden characters: non-breaking space (U+00A0), narrow no-break space (U+202F), etc.
+  input = input
+      .replaceAll('\u202f', ' ') // narrow no-break space
+      .replaceAll('\u00a0', ' ') // non-breaking space
+      .replaceAll(RegExp(r'\s+'), ' ') // collapse multiple spaces
+      .trim();
+
+  final time = DateFormat.jm().parse(input);
+  return DateFormat('HH:mm:ss').format(time);
 }
 
 class _BookAppointmentPageState extends State<BookAppointmentPage> {
@@ -232,7 +277,40 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: _confirmAppointment,
+                onPressed: () async {
+                  final appointment = Appointment(
+                    appointmentDate: selectedDate != null
+                        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+                        : '',
+                    appointmentTime: selectedTime ?? '',
+                    counselorName: counselors.firstWhere((c) =>
+                            c['id'].toString() ==
+                            (selectedCounselorId ?? ''))['full_name'] ??
+                        '',
+                  );
+                  print('Booking data: ' + jsonEncode(appointment.toJson()));
+                  final url =
+                      Uri.parse('http://10.0.2.2:5000/api/appointments');
+                  final response = await http.post(
+                    url,
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode(appointment.toJson()),
+                  );
+                  if (response.statusCode == 200) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('Appointment booked successfully!')),
+                    );
+                  } else {
+                    print(
+                        'Booking failed: ${response.statusCode} ${response.body}');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Failed to book appointment. ${response.body}')),
+                    );
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFA78BFA),
                   shape: RoundedRectangleBorder(

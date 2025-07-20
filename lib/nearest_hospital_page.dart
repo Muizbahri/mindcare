@@ -27,6 +27,8 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
   List<dynamic> _hospitals = [];
   bool _loading = true;
   String? _error;
+  List<LatLng> _routePoints = [];
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -41,10 +43,10 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
     });
     try {
       _userPosition = await _getCurrentLocation();
-      final hospitals = await _fetchNearbyHospitals(
+      final clinics = await _fetchNearbyClinics(
           _userPosition!.latitude, _userPosition!.longitude);
       setState(() {
-        _hospitals = hospitals;
+        _hospitals = clinics;
         _loading = false;
       });
     } catch (e) {
@@ -74,14 +76,28 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
     return await Geolocator.getCurrentPosition();
   }
 
-  Future<List<dynamic>> _fetchNearbyHospitals(double lat, double lon) async {
-    final url =
-        'http://localhost:5000/api/geo/nearby-hospitals?lat=$lat&lon=$lon';
+  Future<List<dynamic>> _fetchNearbyClinics(double lat, double lon) async {
+    final url = 'http://10.0.2.2:5000/api/geo/nearby-clinics?lat=$lat&lon=$lon';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to load hospitals');
+      throw Exception('Failed to load clinics');
+    }
+  }
+
+  Future<List<LatLng>> _fetchRoute(LatLng origin, LatLng dest) async {
+    final apiKey = '78975a0ab83d46e2bd5a71dbbf0c3069'; // API key kamu
+    final url =
+        'https://api.geoapify.com/v1/routing?waypoints=${origin.latitude},${origin.longitude}|${dest.latitude},${dest.longitude}&mode=drive&apiKey=$apiKey';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final coords = data['features'][0]['geometry']['coordinates'] as List;
+      final points = coords[0] as List; // Ambil list pertama
+      return points.map<LatLng>((c) => LatLng(c[1], c[0])).toList();
+    } else {
+      throw Exception('Failed to load route');
     }
   }
 
@@ -99,41 +115,94 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
                       Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: SizedBox(
-                          height: 220,
-                          child: FlutterMap(
-                            options: MapOptions(
-                              center: LatLng(_userPosition!.latitude,
-                                  _userPosition!.longitude),
-                              zoom: 14,
-                            ),
+                          height: 320, // Perbesar tinggi map
+                          width: double.infinity, // Pastikan map full width
+                          child: Stack(
                             children: [
-                              TileLayer(
-                                urlTemplate:
-                                    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                subdomains: const ['a', 'b', 'c'],
-                              ),
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: LatLng(_userPosition!.latitude,
-                                        _userPosition!.longitude),
-                                    width: 40,
-                                    height: 40,
-                                    builder: (ctx) => const Icon(
-                                        Icons.my_location,
-                                        color: Colors.blue,
-                                        size: 32),
+                              FlutterMap(
+                                mapController: _mapController,
+                                options: MapOptions(
+                                  center: LatLng(_userPosition!.latitude,
+                                      _userPosition!.longitude),
+                                  zoom: 14,
+                                ),
+                                children: [
+                                  TileLayer(
+                                    urlTemplate:
+                                        'https://maps.geoapify.com/v1/tile/osm-carto/{z}/{x}/{y}.png?apiKey=78975a0ab83d46e2bd5a71dbbf0c3069',
                                   ),
-                                  ..._hospitals.map((h) => Marker(
-                                        point: LatLng(h['lat'], h['lon']),
+                                  MarkerLayer(
+                                    markers: [
+                                      Marker(
+                                        point: LatLng(_userPosition!.latitude,
+                                            _userPosition!.longitude),
                                         width: 40,
                                         height: 40,
                                         builder: (ctx) => const Icon(
-                                            Icons.local_hospital,
-                                            color: Colors.red,
+                                            Icons.my_location,
+                                            color: Colors.blue,
                                             size: 32),
-                                      ))
+                                      ),
+                                      ..._hospitals
+                                          .where((h) =>
+                                              h['latitude'] != null &&
+                                              h['longitude'] != null)
+                                          .map((h) => Marker(
+                                                point: LatLng(
+                                                  (h['latitude'] as num)
+                                                      .toDouble(),
+                                                  (h['longitude'] as num)
+                                                      .toDouble(),
+                                                ),
+                                                width: 40,
+                                                height: 40,
+                                                builder: (ctx) => const Icon(
+                                                    Icons.local_hospital,
+                                                    color: Colors.red,
+                                                    size: 32),
+                                              ))
+                                    ],
+                                  ),
+                                  if (_routePoints.isNotEmpty)
+                                    PolylineLayer(
+                                      polylines: [
+                                        Polyline(
+                                          points: _routePoints,
+                                          color: Colors.blue,
+                                          strokeWidth: 5,
+                                        ),
+                                      ],
+                                    ),
                                 ],
+                              ),
+                              Positioned(
+                                top: 12,
+                                right: 12,
+                                child: Column(
+                                  children: [
+                                    FloatingActionButton(
+                                      heroTag: 'zoomIn',
+                                      mini: true,
+                                      onPressed: () {
+                                        _mapController.move(
+                                            _mapController.center,
+                                            _mapController.zoom + 1);
+                                      },
+                                      child: const Icon(Icons.add),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    FloatingActionButton(
+                                      heroTag: 'zoomOut',
+                                      mini: true,
+                                      onPressed: () {
+                                        _mapController.move(
+                                            _mapController.center,
+                                            _mapController.zoom - 1);
+                                      },
+                                      child: const Icon(Icons.remove),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -159,7 +228,8 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
                                 return ListTile(
                                   leading: const Icon(Icons.local_hospital,
                                       color: Colors.red),
-                                  title: Text(h['name'] ?? 'Unnamed Hospital'),
+                                  title: Text(
+                                      h['clinic_name'] ?? 'Unnamed Clinic'),
                                   subtitle: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -169,9 +239,20 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
                                       ElevatedButton.icon(
                                         icon: const Icon(Icons.directions),
                                         label: const Text('Get Direction'),
-                                        onPressed: () =>
-                                            _openGoogleMapsDirection(
-                                                h['lat'], h['lon']),
+                                        onPressed: () async {
+                                          final origin = LatLng(
+                                              _userPosition!.latitude,
+                                              _userPosition!.longitude);
+                                          final dest = LatLng(
+                                              (h['latitude'] as num).toDouble(),
+                                              (h['longitude'] as num)
+                                                  .toDouble());
+                                          final route =
+                                              await _fetchRoute(origin, dest);
+                                          setState(() {
+                                            _routePoints = route;
+                                          });
+                                        },
                                         style: ElevatedButton.styleFrom(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 12, vertical: 8),
@@ -183,7 +264,7 @@ class _NearestHospitalPageState extends State<NearestHospitalPage> {
                                   ),
                                   trailing: h['distance'] != null
                                       ? Text(
-                                          '${(h['distance'] / 1000).toStringAsFixed(2)} km')
+                                          '${(h['distance'] as num).toStringAsFixed(2)} km')
                                       : null,
                                 );
                               },

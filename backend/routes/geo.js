@@ -28,6 +28,33 @@ router.get('/clinics', async (req, res) => {
   }
 });
 
+// Endpoint: GET /api/geo/nearby-clinics?lat=...&lon=...
+router.get('/nearby-clinics', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) {
+    return res.status(400).json({ error: 'lat and lon are required' });
+  }
+  try {
+    const db = require('../config/db');
+    // Cari klinik/hospital dalam radius 20km
+    const [rows] = await db.query(`
+      SELECT *, 
+        (6371 * acos(
+          cos(radians(?)) * cos(radians(latitude)) *
+          cos(radians(longitude) - radians(?)) +
+          sin(radians(?)) * sin(radians(latitude))
+        )) AS distance
+      FROM clinics
+      HAVING distance < 20
+      ORDER BY distance ASC
+      LIMIT 10
+    `, [lat, lon, lat]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/counselors', async (req, res) => {
   try {
     const db = require('../config/db');

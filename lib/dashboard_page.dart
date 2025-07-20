@@ -7,6 +7,8 @@ import 'mental_health_articles_page.dart';
 import 'emergency_support_page.dart';
 import 'nearest_hospital_page.dart';
 import 'book_appointment_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final String userName;
@@ -143,6 +145,22 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
       backgroundColor: const Color(0xFFF5FAFF),
       body: Center(
         child: SingleChildScrollView(
